@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<title>幸运大转盘</title>
+	<!-- 引入 Three.js -->
+	<script src="js/three.min.js"></script>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: 'Arial', sans-serif;
+			background: #000; /* 黑色背景 */
+			color: #fff;
+			overflow: hidden; /* 防止页面滚动 */
+		}
+
+		/* 3D 动画容器 */
+		#three-container {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			z-index: -1; /* 将 3D 动画置于背景 */
+		}
+
+		/* 标题样式 */
+		.title {
+			text-align: center;
+			font-family: 'Playfair Display', serif; /* 典雅字体 */
+			font-size: 48px; /* 更大的字体 */
+			font-weight: 700; /* 加粗 */
+			color: #e6d5b8; /* 米金色 */
+			margin-top: 20px;
+			animation: fadeIn 1s ease-in-out; /* 标题淡入效果 */
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* 文字阴影 */
+			letter-spacing: 2px; /* 字间距 */
+		}
+
+		/* 描述样式 */
+		.description {
+			text-align: center;
+			font-family: 'Lora', serif; /* 优雅字体 */
+			font-size: 22px; /* 稍大的字体 */
+			font-weight: 400; /* 正常字重 */
+			color: rgba(230, 213, 184, 0.9); /* 米金色，稍透明 */
+			margin-top: 10px;
+			animation: fadeIn 1.2s ease-in-out; /* 描述淡入效果 */
+			text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* 文字阴影 */
+			letter-spacing: 1px; /* 字间距 */
+			line-height: 1.6; /* 行高 */
+		}
+
+		/* 淡入动画 */
+		@keyframes fadeIn {
+			0% {
+				opacity: 0;
+				transform: translateY(-20px);
+			}
+			100% {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		/* 大转盘样式 */
+		.content {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 80vh; /* 调整高度，留出空间给标题和描述 */
+			animation: fadeIn 2s ease-in-out;
+			
+		}
+
+		.content .wheel {
+			position: relative;
+			width: 422px; /* 与 canvas 的宽度一致 */
+			height: 422px; /* 与 canvas 的高度一致 */
+			background-image: url(./images/wheel-bg.png);
+			background-size: 100% 100%;
+			border-radius: 50%; /* 圆形 */
+			box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.6); /* 发光边缘 */
+			animation: glow 2s infinite alternate; /* 发光动画 */
+		}
+
+		.content .wheel canvas.item {
+			width: 100%;
+			height: 100%;
+			transform: rotate(0deg); /* 确保转盘正着放置 */
+			transform-origin: 50% 50%;
+		}
+
+		.content .wheel img.pointer {
+			position: absolute;
+			width: 31.5%;
+			height: 42.5%;
+			left: 34.3%;
+			top: 23%;
+			filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3)); /* 指针阴影 */
+			transition: transform 0.2s ease; /* 指针悬停效果 */
+		}
+
+		.content .wheel img.pointer:hover {
+			transform: scale(1.1); /* 指针悬停放大 */
+		}
+
+		/* 中奖记录 */
+		.winning-record {
+			position: absolute;
+			bottom: 15px;
+			left: 15px;
+			background: rgba(0, 0, 0, 0.8); /* 更深的背景透明度 */
+			padding: 20px 25px; /* 合适的内边距 */
+			border-radius: 12px; /* 适中的圆角 */
+			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6); /* 更细腻的阴影 */
+			animation: fadeIn 1.5s ease-in-out;
+		}
+
+		.winning-record h3 {
+			font-family: 'Cinzel', serif; /* 优雅的字体 */
+			font-size: 22px; /* 字号适中 */
+			color: #e6d5b8; /* 柔和的金色调 */
+			margin-bottom: 12px; /* 适当的下边距 */
+			text-align: center; /* 居中 */
+			animation: fadeIn 1.5s ease-in-out;
+		}
+
+		.winning-record p {
+			font-family: 'Merriweather', serif; /* 经典字体 */
+			font-size: 16px; /* 适中的字号 */
+			color: rgba(230, 213, 184, 0.9); /* 细腻的文字颜色 */
+			margin: 0;
+			line-height: 1.5; /* 合适的行高 */
+			animation: fadeIn 2s ease-in-out;
+		}
+
+
+		/* 抽奖规则说明 */
+		.rules {
+			position: absolute;
+			bottom: 20px;
+			right: 20px;
+			background: rgba(0, 0, 0, 0.7);
+			padding: 20px;
+			border-radius: 10px;
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+		}
+
+		.rules h3 {
+			font-family: 'Playfair Display', serif;
+			font-size: 24px;
+			color: #e6d5b8;
+			margin-bottom: 10px;
+		}
+
+		.rules ul {
+			list-style: none;
+			padding: 0;
+		}
+
+		.rules li {
+			font-family: 'Lora', serif;
+			font-size: 16px;
+			color: rgba(230, 213, 184, 0.9);
+			margin: 8px 0;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- 3D 动画容器 -->
+	<div id="three-container"></div>
+
+	<!-- 标题和描述 -->
+	<div class="title">幸运大转盘</div>
+	<div class="description">转动转盘赢取丰厚奖品</div>
+
+	<!-- 转盘内容 -->
+	<div class="content">
+		<div class="wheel">
+			<canvas class="item" id="wheelCanvas" width="422px" height="422px"></canvas>
+			<img class="pointer" src="images/wheel-pointer.png" />
+		</div>
+	</div>
+
+	<!-- 中奖记录 -->
+	<div class="winning-record">
+		<h3>中奖记录</h3>
+		<p id="record-text">暂无中奖记录</p>
+	</div>
+
+	<!-- 抽奖规则说明 
+	<div class="rules">
+		<h3>抽奖规则</h3>
+		<ul>
+			<li>每人每天可抽奖 3 次。</li>
+			<li>奖品随机发放，中奖概率公平。</li>
+			<li>中奖后请及时领取奖品，过期无效。</li>
+			<li>最终解释权归活动主办方所有。</li>
+		</ul>
+	</div>
+	-->
+	<!-- 引入 jQuery 和转盘逻辑 -->
+	<script src="js/jquery-2.1.4.js"></script>
+	<script src="js/jQueryRotate.js"></script>
+	<script src="js/index.js"></script>
+
+	<!-- 初始化 Three.js -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			// 场景、相机、渲染器
+			const scene = new THREE.Scene();
+			const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+			const renderer = new THREE.WebGLRenderer();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.getElementById('three-container').appendChild(renderer.domElement);
+
+			// 星空背景
+			const starGeometry = new THREE.BufferGeometry();
+			const starVertices = [];
+			for (let i = 0; i < 10000; i++) {
+				const x = (Math.random() - 0.5) * 2000;
+				const y = (Math.random() - 0.5) * 2000;
+				const z = (Math.random() - 0.5) * 2000;
+				starVertices.push(x, y, z);
+			}
+			starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+
+			const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+			const stars = new THREE.Points(starGeometry, starMaterial);
+			scene.add(stars);
+
+			// 相机位置
+			camera.position.z = 1000;
+
+			// 动画循环
+			function animate() {
+				requestAnimationFrame(animate);
+				stars.rotation.x += 0.0005;
+				stars.rotation.y += 0.0005;
+				renderer.render(scene, camera);
+			}
+			animate();
+
+			// 窗口大小调整
+			window.addEventListener('resize', function() {
+				const width = window.innerWidth;
+				const height = window.innerHeight;
+				renderer.setSize(width, height);
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+			});
+		});
+
+		// 更新中奖记录
+		function updateRecord(reward) {
+			const recordText = document.getElementById('record-text');
+			recordText.textContent = reward;
+		}
+
+		// 在转盘转完后更新中奖记录
+		function rotateFunc(item, tip, count) {
+			var baseAngle = 360 / count;
+			var angles = 360 * 3 / 4 - (item * baseAngle) - baseAngle / 2;
+			$('#wheelCanvas').stopRotate();
+			$('#wheelCanvas').rotate({
+				angle: 0,
+				animateTo: angles + 360 * 5,
+				duration: 8000,
+				callback: function() {
+					updateRecord(tip); // 更新中奖记录
+					turnWheel.bRotate = !turnWheel.bRotate;
+				}
+			});
+		}
+	</script>
+</body>
+
+</html>
